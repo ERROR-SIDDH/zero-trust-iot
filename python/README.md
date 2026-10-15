@@ -61,15 +61,15 @@ From the ns-3 root directory:
 
 ```bash
 cd ~/Desktop/ns-allinone-3.46.1/ns-3.46.1
-./ns3 run /python/examples/micro-segmentation-test.py
-./ns3 run /python/examples/trust-scorer-test.py
-./ns3 run /python/examples/context-drift-test.py
-./ns3 run /python/examples/mitm/mitm-attack.py
-./ns3 run /python/examples/mitm/mitm-mitigation.py
-./ns3 run /python/examples/spoofing/spoofing-attack.py
-./ns3 run /python/examples/spoofing/spoofing-mitigation.py
-./ns3 run /python/examples/unauthorized-access/unauthorized-access-attack.py
-./ns3 run /zero-trust-iot/python/examples/unauthorized-access/unauthorized-access-mitigation.py
+./ns3 run python/examples/micro-segmentation-test.py
+./ns3 run python/examples/trust-scorer-test.py
+./ns3 run python/examples/context-drift-test.py
+./ns3 run python/examples/mitm/mitm-attack.py
+./ns3 run python/examples/mitm/mitm-mitigation.py
+./ns3 run python/examples/spoofing/spoofing-attack.py
+./ns3 run python/examples/spoofing/spoofing-mitigation.py
+./ns3 run python/examples/unauthorized-access/unauthorized-access-attack.py
+./ns3 run python/examples/unauthorized-access/unauthorized-access-mitigation.py
 ```
 
 ### Run All Tests
@@ -77,5 +77,5 @@ cd ~/Desktop/ns-allinone-3.46.1/ns-3.46.1
 To run the entire suite in one go:
 
 ```bash
-python3 /home/err/Documents/zero-trust-iot/python/run_all_tests.py
+python3 python/run_all_tests.py
 ```
