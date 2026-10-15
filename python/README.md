@@ -4,7 +4,7 @@ This directory contains the complete Python migration of the **Zero Trust Module
 
 ---
 
-## 📁 Directory Structure
+##  Directory Structure
 
 ```text
 python/
@@ -39,7 +39,7 @@ python/
 
 ---
 
-## 🚀 Running Examples
+##  Running Examples
 
 ### Prerequisites
 
