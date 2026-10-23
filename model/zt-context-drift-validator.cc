@@ -67,16 +67,15 @@ double
 ContextAttributeStore::CalculateDrift(uint32_t nodeId,
                                       double wt,
                                       double wc,
-                                      double wp)
-
+                                      double wp) const
 {
   // Time deviation
-  double dt = std::abs(currentTime[nodeId] - baselineTime[nodeId]);
+  double dt = std::abs(currentTime.at(nodeId) - baselineTime.at(nodeId));
   // Network deviation
-  double dc = std::abs(currentCongestion[nodeId] - baselineCongestion[nodeId]);
+  double dc = std::abs(currentCongestion.at(nodeId) - baselineCongestion.at(nodeId));
   // Location deviation
-  double dp = std::abs((double)currentProximity[nodeId] -
-                        (double)baselineProximity[nodeId]);
+  double dp = std::abs((double)currentProximity.at(nodeId) -
+                        (double)baselineProximity.at(nodeId));
 
   return wt * dt + wc * dc + wp * dp;
 }
@@ -152,11 +151,11 @@ PeriodicRevalidator::Revalidate()
               << " Trust=" << trust << std::endl;
 
     if (trust < TRUST_THRESHOLD)
-
+    {
       m_policy->Revoke(nodeId);
 
       std::cout << "[ZeroTrust] Node "
- << nodeId
+                << nodeId
                 << " revoked due to low trust" << std::endl;
     }
   }

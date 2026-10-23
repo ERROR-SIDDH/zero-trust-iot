@@ -1,24 +1,26 @@
-
 #ifndef ZT_CERTIFICATE_H
 #define ZT_CERTIFICATE_H
 
 #include <string>
-#include <ctime>
 #include <unordered_set>
-#include <cryptopp/rsa.h>
-#include <cryptopp/base64.h>
+#include <cryptopp/eccrypto.h>
+#include <cryptopp/sha.h>
+#include <ns3/nstime.h>
+
+/// ECDSA over secp256r1 (P-256) with SHA-256: small signatures suited to constrained IoT links.
+using ZtCaSigner = CryptoPP::ECDSA<CryptoPP::ECP, CryptoPP::SHA256>;
 
 /**
  * \class CertificateAuthority
  * \brief Simulates a Certificate Authority (CA) that issues and signs identity certificates.
  *
- * The CA generates a public-private RSA key pair and uses it to sign certificates
+ * The CA generates an ECDSA (secp256r1) key pair and uses it to sign certificates
  * for nodes, which include identity, role, and expiry information.
  */
 class CertificateAuthority {
 public:
   /**
-   * \brief Constructor that initializes and generates RSA key pair.
+   * \brief Constructor that initializes and generates the ECDSA key pair.
    */
   CertificateAuthority();
 
@@ -26,21 +28,34 @@ public:
    * \brief Signs an identity certificate with node ID, role, and expiry.
    * \param nodeId The unique identifier of the node.
    * \param role The assigned role of the node (e.g., "sensor", "gateway").
-   * \param expiry Expiry timestamp for the certificate.
+   * \param expiry Absolute simulation time at which the certificate expires.
    * \return A signed certificate string in plain format with a base64-encoded signature.
    */
-  std::string SignIdentity(uint32_t nodeId, const std::string& role, time_t expiry);
+  std::string SignIdentity(uint32_t nodeId, const std::string& role, ns3::Time expiry);
 
   /**
-   * \brief Retrieves the public RSA key of the CA.
+   * \brief Retrieves the public key of the CA.
    * \return The public key corresponding to the CA's private key.
    */
-  CryptoPP::RSA::PublicKey GetPublicKey() const;
+  ZtCaSigner::PublicKey GetPublicKey() const;
 
 private:
-  CryptoPP::RSA::PrivateKey privateKey; ///< RSA private key used for signing certificates.
-  CryptoPP::RSA::PublicKey publicKey;   ///< RSA public key distributed for verification.
+  ZtCaSigner::PrivateKey privateKey; ///< Private key used for signing certificates.
+  ZtCaSigner::PublicKey publicKey;   ///< Public key distributed for verification.
 };
+
+/**
+ * \brief Verifies a certificate's signature, identity, role and expiry (against simulation time).
+ * \param caPublicKey The public key of the trusted Certificate Authority.
+ * \param nodeId The node's claimed ID.
+ * \param role The role the node claims to perform.
+ * \param certStr The certificate string presented by the node.
+ * \return True if the certificate is authentic, matches the node and role, and has not expired.
+ */
+bool VerifyIdentityCertificate(const ZtCaSigner::PublicKey& caPublicKey,
+                               uint32_t nodeId,
+                               const std::string& role,
+                               const std::string& certStr);
 
 /**
  * \class ZtPolicyEngineWithCert
@@ -53,9 +68,9 @@ class ZtPolicyEngineWithCert {
 public:
   /**
    * \brief Sets the CA's public key used for certificate verification.
-   * \param pub The public RSA key of the trusted Certificate Authority.
+   * \param pub The public key of the trusted Certificate Authority.
    */
-  void SetCaPublicKey(CryptoPP::RSA::PublicKey pub);
+  void SetCaPublicKey(ZtCaSigner::PublicKey pub);
 
   /**
    * \brief Revokes a node by its ID, preventing it from being authorized.
@@ -73,9 +88,8 @@ public:
   bool Authorize(uint32_t nodeId, const std::string& role, const std::string& certStr);
 
 private:
-  CryptoPP::RSA::PublicKey caPublicKey; ///< Trusted public key used for signature verification.
-  std::unordered_set<uint32_t> revoke;  ///< Set of node IDs that are explicitly revoked.
+  ZtCaSigner::PublicKey caPublicKey;   ///< Trusted public key used for signature verification.
+  std::unordered_set<uint32_t> revoke; ///< Set of node IDs that are explicitly revoked.
 };
 
 #endif // ZT_CERTIFICATE_H
-

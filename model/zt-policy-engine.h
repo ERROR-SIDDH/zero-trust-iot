@@ -9,8 +9,9 @@
 
 #include <ns3/object.h>
 #include <ns3/node.h>
+#include <ns3/nstime.h>
 
-#include <cryptopp/rsa.h>
+#include "zt-certificate.h"
 
 using namespace CryptoPP;
 
@@ -40,7 +41,7 @@ public:
 
   bool Authorize(uint32_t nodeId, const std::string& role);
 
-  void SetCaPublicKey(RSA::PublicKey pub);
+  void SetCaPublicKey(ZtCaSigner::PublicKey pub);
 
   void Revoke(uint32_t nodeId);
 
@@ -88,7 +89,7 @@ private:
   /* ================= EXISTING ================= */
   std::unordered_map<uint32_t, std::string> authTable;
   std::unordered_set<uint32_t> revoke;
-  RSA::PublicKey caPublicKey;
+  ZtCaSigner::PublicKey caPublicKey;
 
   /* ================= NEW ================= */
   bool IsWithinTime(uint32_t startHour,
@@ -101,7 +102,7 @@ private:
   /* ================= NEW STORAGE ================= */
   std::vector<RolePolicyRule> m_rules;
 
-  std::map<uint32_t, std::vector<uint64_t>> m_transferHistory;
+  std::map<uint32_t, std::vector<Time>> m_transferHistory;
 
   uint32_t m_policyVersion;
 };

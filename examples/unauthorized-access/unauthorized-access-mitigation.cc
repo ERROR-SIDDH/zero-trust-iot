@@ -60,7 +60,7 @@ void SecureSensorApp::StartApplication() {
   m_socket = Socket::CreateSocket(GetNode(), TcpSocketFactory::GetTypeId());
   m_socket->Connect(m_peer);
 
-  time_t expiry = std::time(nullptr) + 60;
+  Time expiry = Simulator::Now() + Seconds(60);
   std::string cert = m_ca->SignIdentity(m_nodeId, m_role, expiry);
   ZtLogger::LogCertIssued(m_nodeId, m_role, expiry);
   Ptr<Packet> certPkt = Create<Packet>((uint8_t*)cert.c_str(), cert.size());

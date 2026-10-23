@@ -3,8 +3,8 @@
 #define ZT_LOGGER_H
 
 #include <string>
-#include <ctime>
 #include <cstdint>
+#include <ns3/nstime.h>
 
 /**
  * \class ZtLogger
@@ -32,9 +32,9 @@ public:
    * \brief Logs a certificate issuance event.
    * \param nodeId ID of the node receiving the certificate.
    * \param role Assigned role for the node.
-   * \param expiry Expiry time of the certificate.
+   * \param expiry Absolute simulation time at which the certificate expires.
    */
-  static void LogCertIssued(uint32_t nodeId, const std::string &role, time_t expiry);
+  static void LogCertIssued(uint32_t nodeId, const std::string &role, ns3::Time expiry);
 
   /**
    * \brief Logs the result of certificate validation.

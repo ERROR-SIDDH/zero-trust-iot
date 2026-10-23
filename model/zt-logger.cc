@@ -2,8 +2,6 @@
 #include "zt-logger.h"
 #include <ns3/core-module.h>
 #include <sstream>
-#include <iomanip>
-#include <ctime>
 
 using namespace ns3;
 
@@ -27,9 +25,7 @@ void ZtLogger::Log(const std::string &tag, const std::string &message) {
   std::ostringstream output;
 
   if (timestampsEnabled) {
-    std::time_t now = std::time(nullptr);
-    std::tm *lt = std::localtime(&now);
-    output << "[" << std::put_time(lt, "%H:%M:%S") << "] ";
+    output << "[" << Simulator::Now().As(Time::S) << "] ";
   }
 
   output << "[" << tag << "] " << message;
@@ -42,12 +38,12 @@ void ZtLogger::Log(const std::string &tag, const std::string &message) {
  * \brief Logs the issuance of a certificate.
  * \param nodeId The ID of the node receiving the certificate.
  * \param role The assigned role in the certificate.
- * \param expiry The expiration time of the certificate.
+ * \param expiry Absolute simulation time at which the certificate expires.
  */
-void ZtLogger::LogCertIssued(uint32_t nodeId, const std::string &role, time_t expiry) {
+void ZtLogger::LogCertIssued(uint32_t nodeId, const std::string &role, Time expiry) {
   std::ostringstream msg;
   msg << "Issued certificate to Node " << nodeId << " | Role: " << role
-      << " | Expiry: " << expiry;
+      << " | Expiry: " << expiry.As(Time::S);
   Log("ZT-CERT", msg.str());
 }
 

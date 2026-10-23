@@ -6,16 +6,9 @@
 #include "zt-hash-utils.h"
 
 #include <ns3/log.h>
+#include <ns3/simulator.h>
 #include <sstream>
-#include <ctime>
 #include <algorithm>
-#include <iostream>
-
-// Crypto++
-#include <cryptopp/base64.h>
-#include <cryptopp/filters.h>
-#include <cryptopp/pssr.h>
-#include <cryptopp/sha.h>
 
 namespace ns3 {
 
@@ -53,7 +46,7 @@ bool ZtPolicyEngine::Authorize(uint32_t nodeId, const std::string& role) {
 }
 
 // ===================== CERTIFICATE =====================
-void ZtPolicyEngine::SetCaPublicKey(RSA::PublicKey pub) {
+void ZtPolicyEngine::SetCaPublicKey(ZtCaSigner::PublicKey pub) {
   caPublicKey = pub;
 }
 
@@ -65,63 +58,11 @@ bool ZtPolicyEngine::AuthorizeWithCert(uint32_t nodeId,
                                        const std::string& role,
                                        const std::string& certStr) {
   if (revoke.find(nodeId) != revoke.end()) {
-    NS_LOG_UNCOND("ZT-CERT: Node " << nodeId << " is revoked");
+    NS_LOG_INFO("ZT-CERT: Node " << nodeId << " is revoked");
     return false;
   }
 
-  std::string content, sig;
-  size_t sigPos = certStr.find("|SIG:");
-  if (sigPos == std::string::npos) return false;
-
-  content = certStr.substr(0, sigPos);
-  sig = certStr.substr(sigPos + 5);
-
-  std::string decodedSig;
-  CryptoPP::StringSource(sig, true,
-    new CryptoPP::Base64Decoder(
-      new CryptoPP::StringSink(decodedSig)));
-
-  CryptoPP::RSASS<CryptoPP::PSSR, CryptoPP::SHA1>::Verifier verifier(caPublicKey);
-
-  bool valid = false;
-  CryptoPP::StringSource(decodedSig + content, true,
-    new CryptoPP::SignatureVerificationFilter(
-      verifier,
-      new CryptoPP::ArraySink((byte*)&valid, sizeof(valid)),
-      CryptoPP::SignatureVerificationFilter::PUT_RESULT |
-      CryptoPP::SignatureVerificationFilter::SIGNATURE_AT_BEGIN));
-
-  if (!valid) {
-    NS_LOG_UNCOND("ZT-CERT: Signature invalid");
-    return false;
-  }
-
-  std::istringstream ss(content);
-  std::string token;
-  uint32_t idParsed = 0;
-  std::string roleParsed;
-  time_t expiry = 0;
-
-  while (std::getline(ss, token, '|')) {
-    if (token.find("ID:") == 0)
-      idParsed = std::stoul(token.substr(3));
-    else if (token.find("ROLE:") == 0)
-      roleParsed = token.substr(5);
-    else if (token.find("EXP:") == 0)
-      expiry = std::stol(token.substr(4));
-  }
-
-  if (idParsed != nodeId || roleParsed != role) {
-    NS_LOG_UNCOND("ZT-CERT: Identity mismatch");
-    return false;
-  }
-
-  if (std::time(nullptr) > expiry) {
-    NS_LOG_UNCOND("ZT-CERT: Certificate expired");
-    return false;
-  }
-
-  return true;
+  return VerifyIdentityCertificate(caPublicKey, nodeId, role, certStr);
 }
 
 // ===================== MICRO-SEGMENTATION =====================
@@ -131,16 +72,14 @@ void ZtPolicyEngine::AddRolePolicyRule(const RolePolicyRule& rule) {
   m_rules.push_back(rule);
   m_policyVersion++;
 
-  std::cout << "[POLICY] Rule Added. Version: "
-            << m_policyVersion << "\n";
+  NS_LOG_INFO("[POLICY] Rule Added. Version: " << m_policyVersion);
 }
 
 // Time check
 bool ZtPolicyEngine::IsWithinTime(uint32_t startHour,
                                  uint32_t endHour) {
-  std::time_t now = std::time(nullptr);
-  std::tm* local = std::localtime(&now);
-  uint32_t hour = local->tm_hour;
+  // Simulation time 0 is midnight of day 0
+  uint32_t hour = static_cast<uint32_t>(Simulator::Now().GetHours()) % 24;
 
   return (hour >= startHour && hour < endHour);
 }
@@ -148,12 +87,12 @@ bool ZtPolicyEngine::IsWithinTime(uint32_t startHour,
 // Behavior tracking
 uint32_t ZtPolicyEngine::GetBehaviorState(uint32_t nodeId,
                                           uint32_t windowSeconds) {
-  uint64_t now = std::time(nullptr);
+  Time now = Simulator::Now();
   auto& history = m_transferHistory[nodeId];
 
   history.erase(
     std::remove_if(history.begin(), history.end(),
-      [&](uint64_t t) { return now - t > windowSeconds; }),
+      [&](const Time& t) { return now - t > Seconds(windowSeconds); }),
     history.end());
 
   return history.size();
@@ -166,7 +105,7 @@ bool ZtPolicyEngine::EvaluateMicroSegmentation(
     const std::string& action) {
 
   if (!srcNode || !dstNode) {
-    std::cout << "[MICRO-SEG] Invalid Node Pointer\n";
+    NS_LOG_WARN("[MICRO-SEG] Invalid Node Pointer");
     return false;
   }
 
@@ -181,9 +120,8 @@ bool ZtPolicyEngine::EvaluateMicroSegmentation(
 
   uint32_t nodeId = srcNode->GetId();
 
-  std::time_t now = std::time(nullptr);
-  std::tm* local = std::localtime(&now);
-  uint32_t currentHour = local->tm_hour;
+  Time now = Simulator::Now();
+  uint32_t currentHour = static_cast<uint32_t>(now.GetHours()) % 24;
 
   for (const auto& rule : m_rules) {
     if (rule.srcRole == srcRole &&
@@ -209,7 +147,7 @@ bool ZtPolicyEngine::EvaluateMicroSegmentation(
 
       std::string Psi = ns3::ComputeSha256(S);
 
-      std::cout << "[MICRO-SEG] Ψ: " << Psi << "\n";
+      NS_LOG_DEBUG("[MICRO-SEG] Ψ: " << Psi);
 
       if (behaviorState == 0 &&
           rule.effect == ALLOW) {
@@ -227,7 +165,7 @@ bool ZtPolicyEngine::EvaluateMicroSegmentation(
     }
   }
 
-  std::cout << "[MICRO-SEG] Default DENY (Least Privilege)\n";
+  NS_LOG_INFO("[MICRO-SEG] Default DENY (Least Privilege)");
   return false;
 }
 

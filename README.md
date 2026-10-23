@@ -27,7 +27,20 @@ The modules developed within this Zero Trust IoT library for ns-3 work in close 
     ```bash
     ./ns3 build
     ```
-5. Run the examples by copying it to the scratch folder.
+5. Run the examples and the test suite from the ns-3 root:
+
+    ```bash
+    ./ns3 run mitm-mitigation
+    ./test.py -s zero-trust-iot
+    ```
+6. The C++ library can also be used from Python through ns-3's cppyy bindings (configure with `--enable-python-bindings`):
+
+    ```bash
+    ./ns3 run contrib/zero-trust-iot/examples/certificate-example.py
+    ```
+
+Simulation time is the only clock the module uses: certificate expiry is an `ns3::Time`, and micro-segmentation hour windows treat simulation time 0 as 00:00.
+Core components log through `NS_LOG`, e.g. `NS_LOG="ZtPolicyEngine=level_info|ZtCertificate=level_info"`.
 
 ## Contributors
 

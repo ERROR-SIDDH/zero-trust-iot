@@ -46,7 +46,7 @@ private:
     socket->Connect(peer);
 
     handshake->StartHandshake(GetNode(), GetNode(), nid, 1);
-    time_t expiry = std::time(nullptr) + 60;
+    Time expiry = Simulator::Now() + Seconds(60);
     std::string cert = ca->SignIdentity(nid, role, expiry);
     ZtLogger::LogCertIssued(nid, role, expiry);
     Ptr<Packet> certPkt = Create<Packet>((uint8_t*)cert.c_str(), cert.size());

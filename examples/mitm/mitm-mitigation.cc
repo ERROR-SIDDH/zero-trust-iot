@@ -73,8 +73,9 @@ void ReceiveAtGateway(Ptr<Socket> socket)
  */
 void SendFromSensor(Ptr<Socket> socket, Address gatewayAddr, uint32_t nodeId)
 {
-  std::string cert = ca.SignIdentity(nodeId, "IoTDevice", std::time(nullptr) + 300);
-  ZtLogger::LogCertIssued(nodeId, "IoTDevice", std::time(nullptr) + 300);
+  Time expiry = Simulator::Now() + Seconds(300);
+  std::string cert = ca.SignIdentity(nodeId, "IoTDevice", expiry);
+  ZtLogger::LogCertIssued(nodeId, "IoTDevice", expiry);
 
   if (!policyEngine->AuthorizeWithCert(nodeId, "IoTDevice", cert)) {
     ZtLogger::LogCertRejected("Sensor not authorized");

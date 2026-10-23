@@ -62,6 +62,7 @@ if(ENABLE_CRYPTOPP)
     LIBNAME zero-trust-iot
     SOURCE_FILES ${crypto_sources}
     HEADER_FILES ${crypto_headers}
+    TEST_SOURCES test/zero-trust-iot-test-suite.cc
     LIBRARIES_TO_LINK
       ${libcore}
       ${libnetwork}
